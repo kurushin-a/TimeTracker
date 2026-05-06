@@ -11,6 +11,7 @@
     <h1>⏱ TimeTracker</h1>
     <nav>
       <button class="nav-btn active" data-page="log">День</button>
+      <button class="nav-btn" data-page="goals">Цели</button>
       <button class="nav-btn" data-page="tasks">Задачи</button>
       <button class="nav-btn" data-page="habits">Привычки</button>
       <button class="nav-btn" data-page="stats">Статистика</button>
@@ -29,27 +30,23 @@
         <span id="date-label" class="date-label"></span>
       </div>
 
-      <!-- Задачи на этот день (только просмотр + отметка) -->
-      <div class="card" id="day-tasks-card">
-        <h3>📋 Задачи</h3>
+      <div class="card">
+        <h3>📋 Задачи на день</h3>
         <div id="day-tasks-list"><em class="muted">Загрузка...</em></div>
         <button class="btn-link" onclick="switchPage('tasks')">+ Добавить задачу</button>
       </div>
 
-      <!-- Привычки -->
       <div class="card">
         <h3>🔄 Привычки</h3>
         <div id="habits-list"><em class="muted">Загрузка...</em></div>
       </div>
 
-      <!-- Действия -->
       <div class="card">
         <h3>⚡ Действия за день</h3>
         <div id="activities-list"></div>
         <button id="add-activity-btn" class="btn-secondary">+ Добавить действие</button>
       </div>
 
-      <!-- Оценка и заметка -->
       <div class="card">
         <label>Оценка дня (1–10)
           <div class="rating-row">
@@ -66,6 +63,71 @@
       <p id="save-status" class="muted"></p>
     </section>
 
+    <!-- ══════════════════ GOALS PAGE ══════════════════ -->
+    <section id="page-goals" class="page">
+
+      <div class="page-header">
+        <h2>Цели</h2>
+        <button class="btn-primary" id="open-add-goal">+ Новая цель</button>
+      </div>
+
+      <!-- Форма создания цели -->
+      <div class="card" id="add-goal-form" style="display:none">
+        <h3 id="goal-form-title">Новая цель</h3>
+        <div class="form-grid">
+          <label class="span2">Название
+            <input type="text" id="goal-title" placeholder="Например: Поменять работу" />
+          </label>
+          <label class="span2">Описание
+            <textarea id="goal-description" rows="2" placeholder="Зачем эта цель? Что изменится?"></textarea>
+          </label>
+          <label>Категория
+            <select id="goal-category">
+              <option value="work">Работа</option>
+              <option value="learning">Обучение</option>
+              <option value="health">Здоровье</option>
+              <option value="relations">Отношения</option>
+              <option value="rest">Отдых</option>
+              <option value="chores">Быт</option>
+              <option value="other">Другое</option>
+            </select>
+          </label>
+          <label>Статус
+            <select id="goal-status">
+              <option value="active">Активная</option>
+              <option value="paused">На паузе</option>
+              <option value="done">Завершена</option>
+              <option value="cancelled">Отменена</option>
+            </select>
+          </label>
+          <label>Дедлайн (необязательно)
+            <input type="date" id="goal-deadline" />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="save-goal-btn">Сохранить</button>
+          <button class="btn-secondary" id="cancel-goal-btn">Отмена</button>
+        </div>
+      </div>
+
+      <!-- Фильтр по статусу -->
+      <div class="period-tabs" id="goal-status-tabs">
+        <button class="period-btn active" data-status="active">Активные</button>
+        <button class="period-btn" data-status="paused">На паузе</button>
+        <button class="period-btn" data-status="done">Завершены</button>
+        <button class="period-btn" data-status="">Все</button>
+      </div>
+
+      <div id="goals-list"></div>
+
+      <!-- Детальная страница цели (скрыта) -->
+      <div id="goal-detail" style="display:none">
+        <button class="btn-link" id="goal-back-btn">← Все цели</button>
+        <div id="goal-detail-content"></div>
+      </div>
+
+    </section>
+
     <!-- ══════════════════ TASKS PAGE ══════════════════ -->
     <section id="page-tasks" class="page">
 
@@ -74,22 +136,11 @@
         <button class="btn-primary" id="open-add-task">+ Новая задача</button>
       </div>
 
-      <!-- Форма добавления (скрыта по умолчанию) -->
       <div class="card" id="add-task-form" style="display:none">
         <h3>Новая задача</h3>
         <div class="form-grid">
-          <label>Название
+          <label class="span2">Название
             <input type="text" id="task-title" placeholder="Что нужно сделать?" />
-          </label>
-          <label>Период
-            <select id="task-period">
-              <option value="day">День</option>
-              <option value="week">Неделя</option>
-              <option value="month">Месяц</option>
-            </select>
-          </label>
-          <label>Дата
-            <input type="date" id="task-date" />
           </label>
           <label>Категория
             <select id="task-category">
@@ -102,6 +153,17 @@
               <option value="other">Другое</option>
             </select>
           </label>
+          <label>Дедлайн (необязательно)
+            <input type="date" id="task-deadline" />
+          </label>
+          <label>Оценка времени (мин)
+            <input type="number" id="task-estimated" min="1" placeholder="например 60" />
+          </label>
+          <label>Цель (необязательно)
+            <select id="task-goal-id">
+              <option value="">— без цели —</option>
+            </select>
+          </label>
           <label class="span2">Заметка
             <input type="text" id="task-note" placeholder="Необязательно" />
           </label>
@@ -112,15 +174,14 @@
         </div>
       </div>
 
-      <!-- Навигация по датам задач -->
-      <div class="date-picker-row">
-        <button id="task-date-prev" class="date-arrow">‹</button>
-        <input type="date" id="task-view-date" />
-        <button id="task-date-next" class="date-arrow">›</button>
-        <span id="task-date-label" class="date-label"></span>
+      <!-- Фильтр -->
+      <div class="period-tabs">
+        <button class="period-btn active" data-task-status="open,in_progress">Активные</button>
+        <button class="period-btn" data-task-status="done">Выполненные</button>
+        <button class="period-btn" data-task-status="">Все</button>
       </div>
 
-      <div id="tasks-by-period"></div>
+      <div id="tasks-list"></div>
     </section>
 
     <!-- ══════════════════ HABITS PAGE ══════════════════ -->
@@ -131,7 +192,6 @@
         <button class="btn-primary" id="open-add-habit">+ Новая привычка</button>
       </div>
 
-      <!-- Форма добавления -->
       <div class="card" id="add-habit-form" style="display:none">
         <h3>Новая привычка</h3>
         <div class="form-grid">
@@ -158,6 +218,11 @@
           <label id="times-per-week-label" style="display:none">Раз в неделю
             <input type="number" id="habit-times" min="1" max="7" value="3" />
           </label>
+          <label>Цель (необязательно)
+            <select id="habit-goal-id">
+              <option value="">— без цели —</option>
+            </select>
+          </label>
           <label class="span2">Заметка
             <input type="text" id="habit-note" placeholder="Необязательно" />
           </label>
@@ -168,7 +233,6 @@
         </div>
       </div>
 
-      <!-- Список привычек с тепловой картой -->
       <div id="habits-page-list"></div>
     </section>
 
@@ -209,7 +273,7 @@
   <!-- Activity row template -->
   <template id="activity-tpl">
     <div class="activity-row">
-      <input class="act-title" type="text" placeholder="Название" required />
+      <input class="act-title" type="text" placeholder="Название" />
       <select class="act-category">
         <option value="work">Работа</option>
         <option value="learning">Обучение</option>
@@ -226,6 +290,9 @@
         <option value="wasteful">Впустую</option>
       </select>
       <input class="act-duration" type="number" min="1" max="1440" placeholder="мин" />
+      <select class="act-task-id">
+        <option value="">— задача —</option>
+      </select>
       <input class="act-note" type="text" placeholder="Заметка" />
       <button class="act-remove" title="Удалить">✕</button>
     </div>
