@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TimeTracker</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>⏱ TimeTracker</h1>
+    <nav>
+      <button class="nav-btn active" data-page="log">День</button>
+      <button class="nav-btn" data-page="tasks">Задачи</button>
+      <button class="nav-btn" data-page="habits">Привычки</button>
+      <button class="nav-btn" data-page="stats">Статистика</button>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- ══════════════════ LOG PAGE ══════════════════ -->
+    <section id="page-log" class="page active">
+
+      <div class="date-picker-row">
+        <button id="date-prev" class="date-arrow">‹</button>
+        <input type="date" id="selected-date" />
+        <button id="date-next" class="date-arrow">›</button>
+        <span id="date-label" class="date-label"></span>
+      </div>
+
+      <!-- Задачи на этот день (только просмотр + отметка) -->
+      <div class="card" id="day-tasks-card">
+        <h3>📋 Задачи</h3>
+        <div id="day-tasks-list"><em class="muted">Загрузка...</em></div>
+        <button class="btn-link" onclick="switchPage('tasks')">+ Добавить задачу</button>
+      </div>
+
+      <!-- Привычки -->
+      <div class="card">
+        <h3>🔄 Привычки</h3>
+        <div id="habits-list"><em class="muted">Загрузка...</em></div>
+      </div>
+
+      <!-- Действия -->
+      <div class="card">
+        <h3>⚡ Действия за день</h3>
+        <div id="activities-list"></div>
+        <button id="add-activity-btn" class="btn-secondary">+ Добавить действие</button>
+      </div>
+
+      <!-- Оценка и заметка -->
+      <div class="card">
+        <label>Оценка дня (1–10)
+          <div class="rating-row">
+            <input type="range" id="rating" min="1" max="10" value="7" />
+            <span id="rating-val" class="rating-num">7</span>
+          </div>
+        </label>
+        <label>Заметка / вывод
+          <textarea id="note" rows="3" placeholder="Главный вывод дня..."></textarea>
+        </label>
+      </div>
+
+      <button id="save-day-btn" class="btn-primary">Сохранить день</button>
+      <p id="save-status" class="muted"></p>
+    </section>
+
+    <!-- ══════════════════ TASKS PAGE ══════════════════ -->
+    <section id="page-tasks" class="page">
+
+      <div class="page-header">
+        <h2>Задачи</h2>
+        <button class="btn-primary" id="open-add-task">+ Новая задача</button>
+      </div>
+
+      <!-- Форма добавления (скрыта по умолчанию) -->
+      <div class="card" id="add-task-form" style="display:none">
+        <h3>Новая задача</h3>
+        <div class="form-grid">
+          <label>Название
+            <input type="text" id="task-title" placeholder="Что нужно сделать?" />
+          </label>
+          <label>Период
+            <select id="task-period">
+              <option value="day">День</option>
+              <option value="week">Неделя</option>
+              <option value="month">Месяц</option>
+            </select>
+          </label>
+          <label>Дата
+            <input type="date" id="task-date" />
+          </label>
+          <label>Категория
+            <select id="task-category">
+              <option value="work">Работа</option>
+              <option value="learning">Обучение</option>
+              <option value="health">Здоровье</option>
+              <option value="relations">Отношения</option>
+              <option value="rest">Отдых</option>
+              <option value="chores">Быт</option>
+              <option value="other">Другое</option>
+            </select>
+          </label>
+          <label class="span2">Заметка
+            <input type="text" id="task-note" placeholder="Необязательно" />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="save-task-btn">Сохранить</button>
+          <button class="btn-secondary" id="cancel-task-btn">Отмена</button>
+        </div>
+      </div>
+
+      <!-- Навигация по датам задач -->
+      <div class="date-picker-row">
+        <button id="task-date-prev" class="date-arrow">‹</button>
+        <input type="date" id="task-view-date" />
+        <button id="task-date-next" class="date-arrow">›</button>
+        <span id="task-date-label" class="date-label"></span>
+      </div>
+
+      <div id="tasks-by-period"></div>
+    </section>
+
+    <!-- ══════════════════ HABITS PAGE ══════════════════ -->
+    <section id="page-habits" class="page">
+
+      <div class="page-header">
+        <h2>Привычки</h2>
+        <button class="btn-primary" id="open-add-habit">+ Новая привычка</button>
+      </div>
+
+      <!-- Форма добавления -->
+      <div class="card" id="add-habit-form" style="display:none">
+        <h3>Новая привычка</h3>
+        <div class="form-grid">
+          <label>Название
+            <input type="text" id="habit-title" placeholder="Например: Зарядка" />
+          </label>
+          <label>Категория
+            <select id="habit-category">
+              <option value="health">Здоровье</option>
+              <option value="learning">Обучение</option>
+              <option value="work">Работа</option>
+              <option value="relations">Отношения</option>
+              <option value="rest">Отдых</option>
+              <option value="chores">Быт</option>
+              <option value="other">Другое</option>
+            </select>
+          </label>
+          <label>Частота
+            <select id="habit-frequency">
+              <option value="daily">Каждый день</option>
+              <option value="weekly">N раз в неделю</option>
+            </select>
+          </label>
+          <label id="times-per-week-label" style="display:none">Раз в неделю
+            <input type="number" id="habit-times" min="1" max="7" value="3" />
+          </label>
+          <label class="span2">Заметка
+            <input type="text" id="habit-note" placeholder="Необязательно" />
+          </label>
+        </div>
+        <div class="form-actions">
+          <button class="btn-primary" id="save-habit-btn">Сохранить</button>
+          <button class="btn-secondary" id="cancel-habit-btn">Отмена</button>
+        </div>
+      </div>
+
+      <!-- Список привычек с тепловой картой -->
+      <div id="habits-page-list"></div>
+    </section>
+
+    <!-- ══════════════════ STATS PAGE ══════════════════ -->
+    <section id="page-stats" class="page">
+
+      <div class="card">
+        <div class="cal-header">
+          <button id="cal-prev" class="date-arrow">‹</button>
+          <span id="cal-title"></span>
+          <button id="cal-next" class="date-arrow">›</button>
+        </div>
+        <div id="calendar"></div>
+        <div class="cal-legend">
+          <span class="leg-item"><span class="leg-dot" style="background:#ffcdd2"></span>1–3</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#fff9c4"></span>4–6</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#c8e6c9"></span>7–8</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#43a047"></span>9–10</span>
+          <span class="leg-item"><span class="leg-dot" style="background:#f0f0f0"></span>нет записи</span>
+        </div>
+      </div>
+
+      <div id="day-detail" class="card" style="display:none"></div>
+
+      <div class="card">
+        <div class="period-tabs">
+          <button class="period-btn active" data-days="7">7 дней</button>
+          <button class="period-btn" data-days="30">30 дней</button>
+          <button class="period-btn" data-days="90">90 дней</button>
+        </div>
+        <div id="stats-output"><em>Загрузка...</em></div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- Activity row template -->
+  <template id="activity-tpl">
+    <div class="activity-row">
+      <input class="act-title" type="text" placeholder="Название" required />
+      <select class="act-category">
+        <option value="work">Работа</option>
+        <option value="learning">Обучение</option>
+        <option value="health">Здоровье</option>
+        <option value="relations">Отношения</option>
+        <option value="rest">Отдых</option>
+        <option value="chores">Быт</option>
+        <option value="other">Другое</option>
+      </select>
+      <select class="act-impact">
+        <option value="useful">Полезное</option>
+        <option value="necessary">Необходимое</option>
+        <option value="pleasant">Приятное</option>
+        <option value="wasteful">Впустую</option>
+      </select>
+      <input class="act-duration" type="number" min="1" max="1440" placeholder="мин" />
+      <input class="act-note" type="text" placeholder="Заметка" />
+      <button class="act-remove" title="Удалить">✕</button>
+    </div>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
