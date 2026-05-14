@@ -30,6 +30,14 @@
         <span id="date-label" class="date-label"></span>
       </div>
 
+      <!-- Сон -->
+      <div class="card">
+        <h3>🌙 Сон</h3>
+        <div id="sleep-sessions-list"></div>
+        <button id="add-sleep-btn" class="btn-secondary">+ Добавить сессию сна</button>
+        <div id="sleep-summary" class="sleep-summary" style="display:none"></div>
+      </div>
+
       <div class="card">
         <h3>📋 Задачи на день</h3>
         <div id="day-tasks-list"><em class="muted">Загрузка...</em></div>
@@ -43,6 +51,7 @@
 
       <div class="card">
         <h3>⚡ Действия за день</h3>
+        <div id="suggestions-block" style="display:none"></div>
         <div id="activities-list"></div>
         <button id="add-activity-btn" class="btn-secondary">+ Добавить действие</button>
       </div>
@@ -71,7 +80,6 @@
         <button class="btn-primary" id="open-add-goal">+ Новая цель</button>
       </div>
 
-      <!-- Форма создания цели -->
       <div class="card" id="add-goal-form" style="display:none">
         <h3 id="goal-form-title">Новая цель</h3>
         <div class="form-grid">
@@ -110,7 +118,6 @@
         </div>
       </div>
 
-      <!-- Фильтр по статусу -->
       <div class="period-tabs" id="goal-status-tabs">
         <button class="period-btn active" data-status="active">Активные</button>
         <button class="period-btn" data-status="paused">На паузе</button>
@@ -119,13 +126,10 @@
       </div>
 
       <div id="goals-list"></div>
-
-      <!-- Детальная страница цели (скрыта) -->
       <div id="goal-detail" style="display:none">
         <button class="btn-link" id="goal-back-btn">← Все цели</button>
         <div id="goal-detail-content"></div>
       </div>
-
     </section>
 
     <!-- ══════════════════ TASKS PAGE ══════════════════ -->
@@ -160,9 +164,7 @@
             <input type="number" id="task-estimated" min="1" placeholder="например 60" />
           </label>
           <label>Цель (необязательно)
-            <select id="task-goal-id">
-              <option value="">— без цели —</option>
-            </select>
+            <select id="task-goal-id"><option value="">— без цели —</option></select>
           </label>
           <label class="span2">Заметка
             <input type="text" id="task-note" placeholder="Необязательно" />
@@ -174,7 +176,6 @@
         </div>
       </div>
 
-      <!-- Фильтр -->
       <div class="period-tabs">
         <button class="period-btn active" data-task-status="open,in_progress">Активные</button>
         <button class="period-btn" data-task-status="done">Выполненные</button>
@@ -219,9 +220,7 @@
             <input type="number" id="habit-times" min="1" max="7" value="3" />
           </label>
           <label>Цель (необязательно)
-            <select id="habit-goal-id">
-              <option value="">— без цели —</option>
-            </select>
+            <select id="habit-goal-id"><option value="">— без цели —</option></select>
           </label>
           <label class="span2">Заметка
             <input type="text" id="habit-note" placeholder="Необязательно" />
@@ -267,8 +266,29 @@
       </div>
 
     </section>
-
   </main>
+
+  <!-- Sleep session template -->
+  <template id="sleep-tpl">
+    <div class="sleep-row">
+      <div class="sleep-row-fields">
+        <label>Лёг
+          <div class="time-pair">
+            <input class="sleep-date" type="date" />
+            <input class="sleep-time" type="time" />
+          </div>
+        </label>
+        <label>Встал
+          <div class="time-pair">
+            <input class="wake-date" type="date" />
+            <input class="wake-time" type="time" />
+          </div>
+        </label>
+        <div class="sleep-duration-badge">—</div>
+      </div>
+      <button class="act-remove sleep-remove" title="Удалить">✕</button>
+    </div>
+  </template>
 
   <!-- Activity row template -->
   <template id="activity-tpl">
