@@ -12,7 +12,7 @@
     <nav>
       <button class="nav-btn active" data-page="log">День</button>
       <button class="nav-btn" data-page="goals">Цели</button>
-      <button class="nav-btn" data-page="tasks">Задачи</button>
+      <button class="nav-btn" data-page="tasks">Беклог</button>
       <button class="nav-btn" data-page="habits">Привычки</button>
       <button class="nav-btn" data-page="stats">Статистика</button>
     </nav>
@@ -30,6 +30,9 @@
         <span id="date-label" class="date-label"></span>
       </div>
 
+      <!-- Уведомление о невыполненных вчера -->
+      <div id="unresolved-banner" class="unresolved-banner" style="display:none"></div>
+
       <!-- Сон -->
       <div class="card">
         <h3>🌙 Сон</h3>
@@ -38,17 +41,50 @@
         <div id="sleep-summary" class="sleep-summary" style="display:none"></div>
       </div>
 
+      <!-- План дня -->
       <div class="card">
-        <h3>📋 Задачи на день</h3>
-        <div id="day-tasks-list"><em class="muted">Загрузка...</em></div>
-        <button class="btn-link" onclick="switchPage('tasks')">+ Добавить задачу</button>
+        <div class="plan-header">
+          <h3>📋 План дня</h3>
+          <button class="btn-link" id="open-add-plan-item">+ Добавить</button>
+        </div>
+
+        <!-- Форма добавления в план -->
+        <div id="add-plan-form" style="display:none">
+          <div class="plan-form-row">
+            <input type="text" id="plan-title" placeholder="Название задачи" />
+            <select id="plan-category">
+              <option value="work">Работа</option>
+              <option value="learning">Обучение</option>
+              <option value="health">Здоровье</option>
+              <option value="relations">Отношения</option>
+              <option value="rest">Отдых</option>
+              <option value="chores">Быт</option>
+              <option value="other">Другое</option>
+            </select>
+            <input type="number" id="plan-estimated" min="1" placeholder="мин" />
+            <button class="btn-primary" id="save-plan-item-btn">Добавить</button>
+            <button class="btn-secondary" id="cancel-plan-item-btn">✕</button>
+          </div>
+          <!-- Выбор из беклога / целей -->
+          <div class="plan-pick-row">
+            <span class="muted">Или выбрать из</span>
+            <select id="plan-pick-task">
+              <option value="">— задача из беклога/целей —</option>
+            </select>
+            <button class="btn-secondary" id="plan-pick-btn">Добавить выбранную</button>
+          </div>
+        </div>
+
+        <div id="plan-list"><em class="muted">Загрузка...</em></div>
       </div>
 
+      <!-- Привычки -->
       <div class="card">
         <h3>🔄 Привычки</h3>
         <div id="habits-list"><em class="muted">Загрузка...</em></div>
       </div>
 
+      <!-- Действия за день -->
       <div class="card">
         <h3>⚡ Действия за день</h3>
         <div id="suggestions-block" style="display:none"></div>
@@ -132,11 +168,11 @@
       </div>
     </section>
 
-    <!-- ══════════════════ TASKS PAGE ══════════════════ -->
+    <!-- ══════════════════ TASKS (BACKLOG) PAGE ══════════════════ -->
     <section id="page-tasks" class="page">
 
       <div class="page-header">
-        <h2>Задачи</h2>
+        <h2>Беклог задач</h2>
         <button class="btn-primary" id="open-add-task">+ Новая задача</button>
       </div>
 
@@ -157,11 +193,14 @@
               <option value="other">Другое</option>
             </select>
           </label>
-          <label>Дедлайн (необязательно)
-            <input type="date" id="task-deadline" />
-          </label>
           <label>Оценка времени (мин)
             <input type="number" id="task-estimated" min="1" placeholder="например 60" />
+          </label>
+          <label>Назначить на день (необязательно)
+            <input type="date" id="task-scheduled" />
+          </label>
+          <label>Дедлайн (необязательно)
+            <input type="date" id="task-deadline" />
           </label>
           <label>Цель (необязательно)
             <select id="task-goal-id"><option value="">— без цели —</option></select>
@@ -174,12 +213,6 @@
           <button class="btn-primary" id="save-task-btn">Сохранить</button>
           <button class="btn-secondary" id="cancel-task-btn">Отмена</button>
         </div>
-      </div>
-
-      <div class="period-tabs">
-        <button class="period-btn active" data-task-status="open,in_progress">Активные</button>
-        <button class="period-btn" data-task-status="done">Выполненные</button>
-        <button class="period-btn" data-task-status="">Все</button>
       </div>
 
       <div id="tasks-list"></div>
@@ -310,9 +343,6 @@
         <option value="wasteful">Впустую</option>
       </select>
       <input class="act-duration" type="number" min="1" max="1440" placeholder="мин" />
-      <select class="act-task-id">
-        <option value="">— задача —</option>
-      </select>
       <input class="act-note" type="text" placeholder="Заметка" />
       <button class="act-remove" title="Удалить">✕</button>
     </div>
