@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <title>TimeTracker</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -30,7 +31,6 @@
         <span id="date-label" class="date-label"></span>
       </div>
 
-      <!-- Уведомление о невыполненных вчера -->
       <div id="unresolved-banner" class="unresolved-banner" style="display:none"></div>
 
       <!-- Сон -->
@@ -48,10 +48,9 @@
           <button class="btn-link" id="open-add-plan-item">+ Добавить</button>
         </div>
 
-        <!-- Форма добавления в план -->
         <div id="add-plan-form" style="display:none">
           <div class="plan-form-row">
-            <input type="text" id="plan-title" placeholder="Название задачи" />
+            <input type="text" id="plan-title" placeholder="Название" />
             <select id="plan-category">
               <option value="work">Работа</option>
               <option value="learning">Обучение</option>
@@ -65,13 +64,13 @@
             <button class="btn-primary" id="save-plan-item-btn">Добавить</button>
             <button class="btn-secondary" id="cancel-plan-item-btn">✕</button>
           </div>
-          <!-- Выбор из беклога / целей -->
-          <div class="plan-pick-row">
-            <span class="muted">Или выбрать из</span>
-            <select id="plan-pick-task">
-              <option value="">— задача из беклога/целей —</option>
-            </select>
-            <button class="btn-secondary" id="plan-pick-btn">Добавить выбранную</button>
+          <div class="plan-link-row">
+            <span class="suggest-label">Привязка:</span>
+            <span id="plan-link-label" class="plan-link-label">не привязано</span>
+          </div>
+          <div style="margin-top:.5rem">
+            <div class="suggest-label" style="margin-bottom:.35rem">Выбрать из беклога / целей:</div>
+            <div id="plan-picker-tree"></div>
           </div>
         </div>
 
@@ -168,7 +167,7 @@
       </div>
     </section>
 
-    <!-- ══════════════════ TASKS (BACKLOG) PAGE ══════════════════ -->
+    <!-- ══════════════════ TASKS PAGE ══════════════════ -->
     <section id="page-tasks" class="page">
 
       <div class="page-header">
@@ -348,6 +347,6 @@
     </div>
   </template>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=6"></script>
 </body>
 </html>

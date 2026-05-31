@@ -1,12 +1,6 @@
 const API = "http://localhost:8000/api";
 
-// ─── Date utils ───────────────────────────────────────────────────────────────
-
-const todayIso = (() => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-})();
-
+const todayIso = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
 function isoOf(d) { return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
 function localDate(iso) { const [y,m,d]=iso.split("-").map(Number); return new Date(y,m-1,d); }
 function shiftIso(iso, delta) { const d=localDate(iso); d.setDate(d.getDate()+delta); return isoOf(d); }
@@ -21,8 +15,6 @@ function fmtMinutes(min) {
   return h ? `${h}ч${m?" "+m+"м":""}` : `${m}м`;
 }
 
-// ─── Dictionaries ─────────────────────────────────────────────────────────────
-
 const RU_MONTHS=["Январь","Февраль","Март","Апрель","Май","Июнь","Июль","Август","Сентябрь","Октябрь","Ноябрь","Декабрь"];
 const RU_DAYS=["Пн","Вт","Ср","Чт","Пт","Сб","Вс"];
 const CAT_LABELS={work:"Работа",learning:"Обучение",health:"Здоровье",relations:"Отношения",rest:"Отдых",chores:"Быт",other:"Другое"};
@@ -33,8 +25,6 @@ const STATUS_CLASS={open:"s-open",done:"s-done",cancelled:"s-cancelled",active:"
 
 function ratingColor(r){if(!r)return"#f0f0f0";if(r<=3)return"#ffcdd2";if(r<=6)return"#fff9c4";if(r<=8)return"#c8e6c9";return"#43a047";}
 function ratingTextColor(r){return r>=9?"#fff":"#333";}
-
-// ─── Global state ─────────────────────────────────────────────────────────────
 
 let habits=[], allGoals=[], allOpenTasks=[];
 
@@ -62,39 +52,26 @@ document.getElementById("date-next").addEventListener("click",()=>{const n=shift
 
 async function loadLogPage(iso) {
   await refreshOpenTasks();
-  await Promise.all([
-    loadDayIntoForm(iso),
-    loadPlanForDay(iso),
-    loadSuggestions(iso),
-    checkUnresolved(iso),
-  ]);
+  await Promise.all([loadDayIntoForm(iso), loadPlanForDay(iso), loadSuggestions(iso), checkUnresolved(iso)]);
 }
 
 // ── Unresolved banner ─────────────────────────────────────────────────────────
 
 async function checkUnresolved(iso) {
-  const banner = document.getElementById("unresolved-banner");
-  // только для сегодня
-  if (iso !== todayIso) { banner.style.display="none"; return; }
-  const items = await fetch(`${API}/plan/unresolved?today=${iso}`).then(r=>r.json()).catch(()=>[]);
-  if (!items.length) { banner.style.display="none"; return; }
-
-  banner.style.display = "block";
-  banner.innerHTML = `<div class="unresolved-title">⚠️ Вчера не выполнено: ${items.length} задач</div>
-    <div class="unresolved-list">${items.map(p=>`
-      <div class="unresolved-item">
-        <span class="unresolved-name">${p.title}</span>
-        <button class="btn-link" data-id="${p.id}" data-action="move">Перенести на сегодня</button>
-        <button class="btn-link muted" data-id="${p.id}" data-action="backlog">В беклог</button>
-      </div>`).join("")}
-    </div>`;
-
-  banner.querySelectorAll("[data-action='move']").forEach(btn=>btn.addEventListener("click", async()=>{
+  const banner=document.getElementById("unresolved-banner");
+  if(iso!==todayIso){banner.style.display="none";return;}
+  const items=await fetch(`${API}/plan/unresolved?today=${iso}`).then(r=>r.json()).catch(()=>[]);
+  if(!items.length){banner.style.display="none";return;}
+  banner.style.display="block";
+  banner.innerHTML=`<div class="unresolved-title">⚠️ Вчера не выполнено: ${items.length} задач</div>
+    <div class="unresolved-list">${items.map(p=>`<div class="unresolved-item"><span class="unresolved-name">${p.title}</span>
+      <button class="btn-link" data-id="${p.id}" data-action="move">Перенести на сегодня</button>
+      <button class="btn-link muted" data-id="${p.id}" data-action="backlog">В беклог</button></div>`).join("")}</div>`;
+  banner.querySelectorAll("[data-action='move']").forEach(btn=>btn.addEventListener("click",async()=>{
     await fetch(`${API}/plan/${btn.dataset.id}/reschedule?new_date=${todayIso}`,{method:"POST"});
-    await loadPlanForDay(iso);
-    checkUnresolved(iso);
+    loadPlanForDay(iso); checkUnresolved(iso);
   }));
-  banner.querySelectorAll("[data-action='backlog']").forEach(btn=>btn.addEventListener("click", async()=>{
+  banner.querySelectorAll("[data-action='backlog']").forEach(btn=>btn.addEventListener("click",async()=>{
     await fetch(`${API}/plan/${btn.dataset.id}`,{method:"DELETE"});
     checkUnresolved(iso);
   }));
@@ -103,28 +80,37 @@ async function checkUnresolved(iso) {
 // ── Plan for day ──────────────────────────────────────────────────────────────
 
 async function loadPlanForDay(iso) {
-  const el = document.getElementById("plan-list");
-  const items = await fetch(`${API}/plan?d=${iso}`).then(r=>r.json()).catch(()=>[]);
+  const el=document.getElementById("plan-list");
+  const items=await fetch(`${API}/plan?d=${iso}`).then(r=>r.json()).catch(()=>[]);
   renderPlanList(el, items, iso);
 }
 
 function renderPlanList(el, items, iso) {
-  if (!items.length) {
-    el.innerHTML = "<em class='muted'>План пуст — добавьте задачи</em>";
-    return;
-  }
-  el.innerHTML = "";
-  items.forEach(p => {
-    const isDone    = p.status === "done";
-    const isSkipped = p.status === "skipped";
-    const row = document.createElement("div");
-    row.className = `plan-item ${isDone?"plan-done":""} ${isSkipped?"plan-skipped":""}`;
-    row.innerHTML = `
+  if(!items.length){el.innerHTML="<em class='muted'>План пуст — добавьте задачи</em>";return;}
+  el.innerHTML="";
+  items.forEach(p=>{
+    const isDone=p.status==="done", isSkipped=p.status==="skipped";
+    const row=document.createElement("div");
+    row.className=`plan-item ${isDone?"plan-done":""} ${isSkipped?"plan-skipped":""}`;
+
+    // Показываем привязку к задаче/цели
+    let linkBadge="";
+    if(p.task_id){
+      const task=allOpenTasks.find(t=>t.id===p.task_id);
+      const goal=task?allGoals.find(g=>g.id===task.goal_id):null;
+      linkBadge=`<span class="plan-link-badge">🔗 ${task?task.title:"задача"}${goal?` · ${goal.title}`:""}</span>`;
+    } else if(p.goal_id){
+      const goal=allGoals.find(g=>g.id===p.goal_id);
+      linkBadge=`<span class="plan-link-badge">🎯 ${goal?goal.title:"цель"}</span>`;
+    }
+
+    row.innerHTML=`
       <div class="plan-item-left">
-        <button class="plan-check ${isDone?"checked":""}" data-id="${p.id}" data-done="${isDone}" title="${isDone?"Отменить":"Выполнено"}">
-          ${isDone?"✓":"○"}
-        </button>
-        <span class="plan-title">${p.title}</span>
+        <button class="plan-check ${isDone?"checked":""}" data-id="${p.id}" data-done="${isDone}">${isDone?"✓":"○"}</button>
+        <div class="plan-item-info">
+          <span class="plan-title">${p.title}</span>
+          ${linkBadge}
+        </div>
         <span class="detail-tag cat-${p.category}">${CAT_LABELS[p.category]||p.category}</span>
         ${p.estimated_minutes?`<span class="plan-est">${fmtMinutes(p.estimated_minutes)}</span>`:""}
       </div>
@@ -132,101 +118,187 @@ function renderPlanList(el, items, iso) {
         ${!isDone&&!isSkipped?`<button class="btn-link muted plan-skip" data-id="${p.id}" title="Пропустить">—</button>`:""}
         <button class="btn-link danger plan-del" data-id="${p.id}" title="Удалить">✕</button>
       </div>`;
-
-    // выполнить / снять выполнение
-    row.querySelector(".plan-check").addEventListener("click", async btn => {
-      const itemId = btn.currentTarget.dataset.id;
-      const wasDone = btn.currentTarget.dataset.done === "true";
-      if (wasDone) {
-        // пока просто удаляем и пересоздаём — простейший вариант
+    row.querySelector(".plan-check").addEventListener("click", async btn=>{
+      const itemId=btn.currentTarget.dataset.id;
+      const wasDone=btn.currentTarget.dataset.done==="true";
+      if(wasDone){
         await fetch(`${API}/plan/${itemId}`,{method:"DELETE"});
       } else {
-        // спрашиваем фактическое время
-        const actual = prompt(`Фактическое время выполнения (мин)?\nПо умолчанию: ${p.estimated_minutes||30}`, p.estimated_minutes||30);
-        if (actual === null) return;
+        const actual=prompt(`Фактическое время (мин)?`,p.estimated_minutes||30);
+        if(actual===null)return;
         await fetch(`${API}/plan/${itemId}/complete?actual_minutes=${parseInt(actual)||p.estimated_minutes||30}`,{method:"POST"});
-        // перезагружаем действия
         await loadDayIntoForm(iso);
       }
       loadPlanForDay(iso);
     });
-
-    row.querySelector(".plan-skip")?.addEventListener("click", async()=>{
-      await fetch(`${API}/plan/${p.id}/skip`,{method:"POST"});
-      loadPlanForDay(iso);
-    });
-    row.querySelector(".plan-del").addEventListener("click", async()=>{
-      await fetch(`${API}/plan/${p.id}`,{method:"DELETE"});
-      loadPlanForDay(iso);
-    });
-
+    row.querySelector(".plan-skip")?.addEventListener("click",async()=>{ await fetch(`${API}/plan/${p.id}/skip`,{method:"POST"}); loadPlanForDay(iso); });
+    row.querySelector(".plan-del").addEventListener("click",async()=>{ await fetch(`${API}/plan/${p.id}`,{method:"DELETE"}); loadPlanForDay(iso); });
     el.appendChild(row);
   });
 }
 
-// ── Plan form ────────────────────────────────────────────────────────────────
+// ── Plan form ─────────────────────────────────────────────────────────────────
 
-document.getElementById("open-add-plan-item").addEventListener("click", async () => {
-  const form = document.getElementById("add-plan-form");
-  form.style.display = form.style.display==="none" ? "block" : "none";
-  if (form.style.display === "block") await populatePlanPicker();
+// Состояние привязки для ручного ввода
+let planLinkTaskId=null, planLinkGoalId=null;
+
+document.getElementById("open-add-plan-item").addEventListener("click", async()=>{
+  const form=document.getElementById("add-plan-form");
+  form.style.display=form.style.display==="none"?"block":"none";
+  if(form.style.display==="block"){
+    planLinkTaskId=null; planLinkGoalId=null;
+    updatePlanLinkLabel();
+    await buildPlanPicker();
+  }
+});
+document.getElementById("cancel-plan-item-btn").addEventListener("click",()=>{
+  document.getElementById("add-plan-form").style.display="none";
+  planLinkTaskId=null; planLinkGoalId=null;
 });
 
-document.getElementById("cancel-plan-item-btn").addEventListener("click", ()=>{
-  document.getElementById("add-plan-form").style.display = "none";
-});
+function updatePlanLinkLabel(){
+  const el=document.getElementById("plan-link-label");
+  if(!el)return;
+  if(planLinkTaskId){
+    const task=allOpenTasks.find(t=>t.id===planLinkTaskId);
+    const goal=task?allGoals.find(g=>g.id===task.goal_id):null;
+    el.textContent=`🔗 ${task?task.title:"задача"}${goal?` · ${goal.title}`:""}`;
+    el.style.color="var(--accent)";
+  } else if(planLinkGoalId){
+    const goal=allGoals.find(g=>g.id===planLinkGoalId);
+    el.textContent=`🎯 ${goal?goal.title:"цель"}`;
+    el.style.color="var(--accent)";
+  } else {
+    el.textContent="не привязано";
+    el.style.color="var(--muted)";
+  }
+}
 
-document.getElementById("save-plan-item-btn").addEventListener("click", async () => {
-  const title = document.getElementById("plan-title").value.trim();
-  if (!title) return;
-  const payload = {
-    date:              dateInput.value,
-    title,
-    category:          document.getElementById("plan-category").value,
-    estimated_minutes: parseInt(document.getElementById("plan-estimated").value)||null,
-    task_id:           null,
+document.getElementById("save-plan-item-btn").addEventListener("click",async()=>{
+  const title=document.getElementById("plan-title").value.trim();
+  if(!title)return;
+  const payload={
+    date:dateInput.value, title,
+    category:document.getElementById("plan-category").value,
+    estimated_minutes:parseInt(document.getElementById("plan-estimated").value)||null,
+    task_id:planLinkTaskId||null,
+    goal_id:planLinkGoalId||null,
   };
   await fetch(`${API}/plan`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  document.getElementById("plan-title").value = "";
-  document.getElementById("plan-estimated").value = "";
-  document.getElementById("add-plan-form").style.display = "none";
+  document.getElementById("plan-title").value="";
+  document.getElementById("plan-estimated").value="";
+  document.getElementById("add-plan-form").style.display="none";
+  planLinkTaskId=null; planLinkGoalId=null;
   loadPlanForDay(dateInput.value);
 });
 
-document.getElementById("plan-pick-btn").addEventListener("click", async () => {
-  const sel = document.getElementById("plan-pick-task");
-  const taskId = sel.value;
-  if (!taskId) return;
-  const task = allOpenTasks.find(t=>t.id===taskId);
-  if (!task) return;
-  const payload = {
-    date:              dateInput.value,
-    title:             task.title,
-    category:          task.category,
-    estimated_minutes: task.estimated_minutes||null,
-    task_id:           task.id,
-  };
-  await fetch(`${API}/plan`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-  sel.value = "";
-  document.getElementById("add-plan-form").style.display = "none";
-  loadPlanForDay(dateInput.value);
-});
+// ── Пикер задач — сворачиваемые секции ───────────────────────────────────────
 
-async function populatePlanPicker() {
-  await refreshOpenTasks();
-  const sel = document.getElementById("plan-pick-task");
-  sel.innerHTML = `<option value="">— задача из беклога/целей —</option>`;
-  allOpenTasks.forEach(t=>{
-    const opt=document.createElement("option");
-    opt.value=t.id;
-    const goal = allGoals.find(g=>g.id===t.goal_id);
-    opt.textContent = goal ? `[${goal.title}] ${t.title}` : t.title;
-    sel.appendChild(opt);
+async function buildPlanPicker() {
+  const container=document.getElementById("plan-picker-tree");
+  if(!container)return;
+  container.innerHTML="<em class='muted'>Загрузка...</em>";
+
+  const backlog=allOpenTasks.filter(t=>!t.goal_id&&!t.parent_task_id);
+  const goalTrees=await Promise.all(
+    allGoals.filter(g=>g.status==="active").map(async g=>({
+      goal:g,
+      flat:await fetch(`${API}/goals/${g.id}/flat`).then(r=>r.json()).catch(()=>[])
+    }))
+  );
+
+  container.innerHTML="";
+
+  // Беклог
+  if(backlog.length){
+    container.appendChild(makePickerSection("📋 Беклог", backlog.map(t=>
+      makePickerItem(t.title, t.category, t.estimated_minutes, t.id, null)
+    )));
+  }
+
+  // По целям
+  goalTrees.forEach(({goal,flat})=>{
+    // показываем цель даже без задач — можно привязать напрямую
+    const items=[];
+    // "Вся цель" — привязка без задачи
+    items.push(makePickerItem(`(вся цель — ${goal.title})`, goal.category, null, null, goal.id, 0, false, true));
+    flat.forEach(({task,depth,is_leaf})=>{
+      items.push(makePickerItem(task.title, task.category, task.estimated_minutes, task.id, goal.id, depth, is_leaf));
+    });
+    container.appendChild(makePickerSection(`🎯 ${goal.title}`, items));
   });
+
+  if(!container.children.length)
+    container.innerHTML="<em class='muted'>Нет задач в беклоге и целях</em>";
+}
+
+function makePickerSection(title, itemEls) {
+  const sec=document.createElement("div");
+  sec.className="picker-section";
+
+  const header=document.createElement("div");
+  header.className="picker-section-header";
+  header.innerHTML=`<span class="picker-section-title">${title}</span><span class="picker-toggle">▾</span>`;
+
+  const body=document.createElement("div");
+  body.className="picker-section-body";
+  itemEls.forEach(el=>body.appendChild(el));
+
+  // Сворачивание
+  header.addEventListener("click",()=>{
+    const open=body.style.display!=="none";
+    body.style.display=open?"none":"block";
+    header.querySelector(".picker-toggle").textContent=open?"▸":"▾";
+  });
+
+  sec.appendChild(header);
+  sec.appendChild(body);
+  return sec;
+}
+
+function makePickerItem(title, category, estimated, taskId, goalId, depth=0, isLeaf=true, isGoalRef=false) {
+  const item=document.createElement("div");
+  item.className="picker-item"+(isLeaf&&!isGoalRef?" picker-leaf":"")+(isGoalRef?" picker-goal-ref":"");
+  item.style.paddingLeft=`${depth*16+8}px`;
+  item.innerHTML=`
+    <span class="picker-item-title">${title}</span>
+    <span class="detail-tag cat-${category}">${CAT_LABELS[category]||category}</span>
+    ${estimated?`<span class="plan-est">${fmtMinutes(estimated)}</span>`:""}
+    <div class="picker-item-actions">
+      <button class="btn-link picker-add-btn" title="Добавить в план">+ В план</button>
+      <button class="btn-link picker-link-btn" title="Привязать к ручному вводу">🔗 Привязать</button>
+    </div>`;
+
+  // Добавить в план одним кликом (как раньше)
+  item.querySelector(".picker-add-btn").addEventListener("click",async()=>{
+    const payload={
+      date:dateInput.value, title: isGoalRef?(document.getElementById("plan-title").value.trim()||title):title,
+      category, estimated_minutes:estimated||null,
+      task_id:taskId||null, goal_id:goalId||null,
+    };
+    await fetch(`${API}/plan`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    document.getElementById("add-plan-form").style.display="none";
+    planLinkTaskId=null; planLinkGoalId=null;
+    loadPlanForDay(dateInput.value);
+  });
+
+  // Привязать к ручному вводу
+  item.querySelector(".picker-link-btn").addEventListener("click",()=>{
+    planLinkTaskId=taskId||null;
+    planLinkGoalId=goalId||null;
+    updatePlanLinkLabel();
+    // подставляем название если поле пустое
+    const titleInput=document.getElementById("plan-title");
+    if(!titleInput.value.trim()&&!isGoalRef) titleInput.value=title;
+    if(estimated&&!document.getElementById("plan-estimated").value)
+      document.getElementById("plan-estimated").value=estimated;
+  });
+
+  return item;
 }
 
 async function refreshOpenTasks() {
-  allOpenTasks = await fetch(`${API}/tasks/open`).then(r=>r.json()).catch(()=>[]);
+  allOpenTasks=await fetch(`${API}/tasks/open`).then(r=>r.json()).catch(()=>[]);
 }
 
 // ── Suggestions ───────────────────────────────────────────────────────────────
@@ -285,7 +357,7 @@ function collectActivities() {
   })).filter(a=>a.title&&a.duration_m>0);
 }
 
-// ── Habits in log ─────────────────────────────────────────────────────────────
+// ── Habits ────────────────────────────────────────────────────────────────────
 
 async function loadHabits(){habits=await fetch(`${API}/habits`).then(r=>r.json()).catch(()=>[]);}
 
@@ -300,13 +372,9 @@ function renderLogHabits(doneIds=[]) {
   });
 }
 
-// ── Rating ────────────────────────────────────────────────────────────────────
-
 const ratingInput=document.getElementById("rating");
 const ratingVal=document.getElementById("rating-val");
 ratingInput.addEventListener("input",()=>ratingVal.textContent=ratingInput.value);
-
-// ── Load day ─────────────────────────────────────────────────────────────────
 
 async function loadDayIntoForm(iso) {
   actList.innerHTML=""; sleepList.innerHTML="";
@@ -315,18 +383,17 @@ async function loadDayIntoForm(iso) {
   document.getElementById("sleep-summary").style.display="none";
   renderLogHabits([]);
   document.getElementById("save-status").textContent="";
-
   const res=await fetch(`${API}/days/${iso}`).catch(()=>null);
-  if(!res||!res.ok) return;
+  if(!res||!res.ok)return;
   const day=await res.json();
   ratingInput.value=day.rating; ratingVal.textContent=day.rating;
-  if(day.note) document.getElementById("note").value=day.note;
+  if(day.note)document.getElementById("note").value=day.note;
   day.activities.forEach(addActivityRow);
   renderLogHabits(day.habits_done);
   (day.sleep_sessions||[]).forEach(s=>addSleepRow(s));
 }
 
-// ── Sleep sessions ────────────────────────────────────────────────────────────
+// ── Sleep ────────────────────────────────────────────────────────────────────
 
 const sleepList=document.getElementById("sleep-sessions-list");
 const sleepTpl=document.getElementById("sleep-tpl");
@@ -334,60 +401,45 @@ document.getElementById("add-sleep-btn").addEventListener("click",()=>addSleepRo
 
 function addSleepRow(data={}) {
   const row=sleepTpl.content.cloneNode(true).querySelector(".sleep-row");
-  const sleepDateIn=row.querySelector(".sleep-date"), sleepTimeIn=row.querySelector(".sleep-time");
-  const wakeDateIn=row.querySelector(".wake-date"),   wakeTimeIn=row.querySelector(".wake-time");
+  const sleepDateIn=row.querySelector(".sleep-date"),sleepTimeIn=row.querySelector(".sleep-time");
+  const wakeDateIn=row.querySelector(".wake-date"),wakeTimeIn=row.querySelector(".wake-time");
   const badge=row.querySelector(".sleep-duration-badge");
   sleepDateIn.value=data.sleep_date||shiftIso(dateInput.value,-1);
   sleepTimeIn.value=data.sleep_time||"23:00";
   wakeDateIn.value=data.wake_date||dateInput.value;
   wakeTimeIn.value=data.wake_time||"07:00";
   function updateBadge(){
-    try{
-      const start=new Date(`${sleepDateIn.value}T${sleepTimeIn.value}`);
-      const end=new Date(`${wakeDateIn.value}T${wakeTimeIn.value}`);
-      const diff=Math.round((end-start)/60000);
-      badge.textContent=diff>0?fmtMinutes(diff):"?";
-      badge.className="sleep-duration-badge"+(diff>0?" ok":" err");
-    }catch{badge.textContent="?";}
+    try{const start=new Date(`${sleepDateIn.value}T${sleepTimeIn.value}`),end=new Date(`${wakeDateIn.value}T${wakeTimeIn.value}`),diff=Math.round((end-start)/60000);
+    badge.textContent=diff>0?fmtMinutes(diff):"?";badge.className="sleep-duration-badge"+(diff>0?" ok":" err");}catch{badge.textContent="?";}
   }
   [sleepDateIn,sleepTimeIn,wakeDateIn,wakeTimeIn].forEach(el=>el.addEventListener("change",updateBadge));
   updateBadge();
   row.querySelector(".sleep-remove").addEventListener("click",()=>{row.remove();updateSleepSummary();});
   row.addEventListener("change",updateSleepSummary);
-  sleepList.appendChild(row);
-  updateSleepSummary();
+  sleepList.appendChild(row); updateSleepSummary();
 }
 
 function collectSleepSessions(){
   return [...sleepList.querySelectorAll(".sleep-row")].map(row=>({
-    sleep_date:row.querySelector(".sleep-date").value,
-    sleep_time:row.querySelector(".sleep-time").value,
-    wake_date:row.querySelector(".wake-date").value,
-    wake_time:row.querySelector(".wake-time").value,
+    sleep_date:row.querySelector(".sleep-date").value, sleep_time:row.querySelector(".sleep-time").value,
+    wake_date:row.querySelector(".wake-date").value,   wake_time:row.querySelector(".wake-time").value,
   })).filter(s=>s.sleep_date&&s.sleep_time&&s.wake_date&&s.wake_time);
 }
 
 function updateSleepSummary(){
-  const el=document.getElementById("sleep-summary");
-  const sessions=collectSleepSessions();
+  const el=document.getElementById("sleep-summary"),sessions=collectSleepSessions();
   if(!sessions.length){el.style.display="none";return;}
-  const iso=dateInput.value;
-  const before=sessions.filter(s=>s.wake_date===iso);
+  const iso=dateInput.value,before=sessions.filter(s=>s.wake_date===iso);
   const all=[...new Map(sessions.filter(s=>s.wake_date===iso||s.sleep_date===iso).map(s=>[`${s.sleep_date}${s.sleep_time}`,s])).values()];
   const calcMin=s=>{const start=new Date(`${s.sleep_date}T${s.sleep_time}`),end=new Date(`${s.wake_date}T${s.wake_time}`);return Math.max(0,Math.round((end-start)/60000));};
-  const beforeMin=before.reduce((acc,s)=>acc+calcMin(s),0);
-  const totalMin=all.reduce((acc,s)=>acc+calcMin(s),0);
-  const lastWake=before.sort((a,b)=>a.wake_time>b.wake_time?1:-1).at(-1)?.wake_time;
-  const awakeMin=beforeMin?24*60-beforeMin:null;
+  const beforeMin=before.reduce((acc,s)=>acc+calcMin(s),0),totalMin=all.reduce((acc,s)=>acc+calcMin(s),0);
+  const lastWake=before.sort((a,b)=>a.wake_time>b.wake_time?1:-1).at(-1)?.wake_time,awakeMin=beforeMin?24*60-beforeMin:null;
   el.style.display="flex";
-  el.innerHTML=`
-    <div class="sleep-stat"><span class="sleep-stat-val">${fmtMinutes(beforeMin)||"—"}</span><span class="sleep-stat-lbl">сон до дня</span></div>
+  el.innerHTML=`<div class="sleep-stat"><span class="sleep-stat-val">${fmtMinutes(beforeMin)||"—"}</span><span class="sleep-stat-lbl">сон до дня</span></div>
     <div class="sleep-stat"><span class="sleep-stat-val">${fmtMinutes(totalMin)||"—"}</span><span class="sleep-stat-lbl">общий сон</span></div>
     ${lastWake?`<div class="sleep-stat"><span class="sleep-stat-val">${lastWake}</span><span class="sleep-stat-lbl">подъём</span></div>`:""}
     ${awakeMin?`<div class="sleep-stat"><span class="sleep-stat-val">${fmtMinutes(awakeMin)}</span><span class="sleep-stat-lbl">бодрствование</span></div>`:""}`;
 }
-
-// ── Save day ──────────────────────────────────────────────────────────────────
 
 document.getElementById("save-day-btn").addEventListener("click",async()=>{
   const status=document.getElementById("save-status");
@@ -396,7 +448,7 @@ document.getElementById("save-day-btn").addEventListener("click",async()=>{
   status.textContent="Сохраняю...";
   try{
     const res=await fetch(`${API}/days`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-    if(!res.ok) throw new Error(await res.text());
+    if(!res.ok)throw new Error(await res.text());
     status.textContent="✓ День сохранён";
     if(calYear!==undefined){await refreshSummaryCache();renderCalendar();}
   }catch(e){status.textContent="Ошибка: "+e.message;}
@@ -416,9 +468,10 @@ async function initGoalsPage(){
       document.getElementById("goals-list").style.display="block";
       document.querySelectorAll(".page-header,#goal-status-tabs").forEach(e=>e.style.display="");
     };
-    document.querySelectorAll("#goal-status-tabs .period-btn").forEach(btn=>{
-      btn.addEventListener("click",()=>{document.querySelectorAll("#goal-status-tabs .period-btn").forEach(b=>b.classList.remove("active"));btn.classList.add("active");currentGoalStatus=btn.dataset.status;renderGoals();});
-    });
+    document.querySelectorAll("#goal-status-tabs .period-btn").forEach(btn=>btn.addEventListener("click",()=>{
+      document.querySelectorAll("#goal-status-tabs .period-btn").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active"); currentGoalStatus=btn.dataset.status; renderGoals();
+    }));
     goalsInited=true;
   }
   await refreshGoals(); renderGoals();
@@ -480,26 +533,76 @@ async function openGoalDetail(goalId){
   document.getElementById("goals-list").style.display="none";
   document.querySelectorAll("#page-goals .page-header,#goal-status-tabs").forEach(e=>e.style.display="none");
   document.getElementById("goal-detail").style.display="block";
-  const content=document.getElementById("goal-detail-content");content.innerHTML="<em class='muted'>Загрузка...</em>";
-  const [prog,tasks]=await Promise.all([
+  const content=document.getElementById("goal-detail-content");
+  content.innerHTML="<em class='muted'>Загрузка...</em>";
+  const [prog,tree]=await Promise.all([
     fetch(`${API}/goals/${goalId}/progress`).then(r=>r.json()),
-    fetch(`${API}/goals/${goalId}/tasks`).then(r=>r.json()).catch(()=>[]),
+    fetch(`${API}/goals/${goalId}/tree`).then(r=>r.json()).catch(()=>[]),
   ]);
   const g=prog.goal;
-  const tasksHtml=tasks.length?tasks.map(t=>`
-    <div class="tree-node">
-      <span class="status-dot ${STATUS_CLASS[t.status]||""}"></span>
-      <span class="tree-title ${t.status==="done"?"line-through":""}">${t.title}</span>
-      <span class="detail-tag cat-${t.category}">${CAT_LABELS[t.category]||t.category}</span>
-      ${t.estimated_minutes?`<span class="task-time-badge">~${fmtMinutes(t.estimated_minutes)}</span>`:""}
-      ${t.actual_minutes?`<span class="task-time-badge act">${fmtMinutes(t.actual_minutes)}</span>`:""}
-      <button class="btn-link" data-id="${t.id}" data-done="${t.status==="done"}">${t.status==="done"?"↩":"✓"}</button>
-    </div>`).join(""):"<em class='muted'>Нет задач</em>";
+  function renderTree(nodes, depth=0) {
+    return nodes.map(node=>{
+      const t=node.task, children=node.children||[], isLeaf=children.length===0, hasChildren=children.length>0;
+      return `<div class="tree-node ${hasChildren?"tree-parent":""}" style="padding-left:${depth*20}px">
+          ${hasChildren?`<button class="tree-toggle" data-open="true">▾</button>`:`<span style="width:16px;display:inline-block"></span>`}
+          <span class="status-dot ${STATUS_CLASS[t.status]||""}"></span>
+          <span class="tree-title ${t.status==="done"?"line-through":""}">${t.title}</span>
+          <span class="detail-tag cat-${t.category}">${CAT_LABELS[t.category]||t.category}</span>
+          ${t.estimated_minutes?`<span class="task-time-badge">~${fmtMinutes(t.estimated_minutes)}</span>`:""}
+          ${t.actual_minutes?`<span class="task-time-badge act">${fmtMinutes(t.actual_minutes)}</span>`:""}
+          <div class="tree-actions">
+            <button class="btn-link tree-status" data-id="${t.id}" data-done="${t.status==="done"}">${t.status==="done"?"↩":"✓"}</button>
+            <button class="btn-link tree-add-sub" data-parent="${t.id}" data-goal="${goalId}">+подзадача</button>
+          </div>
+        </div>${hasChildren?`<div class="tree-children">${renderTree(children,depth+1)}</div>`:""}`;
+    }).join("");
+  }
+  const treeHtml=tree.length?renderTree(tree):"<em class='muted'>Нет задач</em>";
   content.innerHTML=`
-    <div class="card" style="margin-top:.5rem"><div class="goal-card-header"><span class="goal-title">${g.title}</span><span class="status-badge ${STATUS_CLASS[g.status]}">${STATUS_LABELS[g.status]||g.status}</span></div>${g.description?`<p class="goal-desc">${g.description}</p>`:""}<div class="goal-meta">${g.deadline?`<span>📅 ${localDate(g.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"})}</span>`:""}<span>⏱ ${fmtMinutes(prog.total_minutes)} вложено</span><span>✅ ${prog.tasks_done}/${prog.tasks_total} задач</span></div></div>
-    <div class="card"><h3>Задачи цели</h3><div class="task-tree">${tasksHtml}</div><button class="btn-secondary" style="margin-top:.5rem" onclick="switchPage('tasks')">+ Добавить задачу</button></div>
+    <div class="card" style="margin-top:.5rem">
+      <div class="goal-card-header"><span class="goal-title">${g.title}</span><span class="status-badge ${STATUS_CLASS[g.status]}">${STATUS_LABELS[g.status]||g.status}</span></div>
+      ${g.description?`<p class="goal-desc">${g.description}</p>`:""}
+      <div class="goal-meta">${g.deadline?`<span>📅 ${localDate(g.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"})}</span>`:""}<span>⏱ ${fmtMinutes(prog.total_minutes)} вложено</span><span>✅ ${prog.tasks_done}/${prog.tasks_total} задач</span></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
+        <h3>Задачи</h3><button class="btn-secondary" id="add-root-task-btn">+ Корневая задача</button>
+      </div>
+      <div id="add-subtask-form" class="subtask-form" style="display:none">
+        <input type="text" id="subtask-title" placeholder="Название задачи" />
+        <input type="number" id="subtask-estimated" placeholder="мин" min="1" />
+        <button class="btn-primary" id="subtask-save">Добавить</button>
+        <button class="btn-secondary" id="subtask-cancel">✕</button>
+      </div>
+      <div class="task-tree" id="goal-task-tree">${treeHtml}</div>
+    </div>
     <div class="card"><h3>Привычки</h3>${prog.linked_habits.length?prog.linked_habits.map(h=>`<div class="habit-row"><span class="habit-title">${h.title}</span><span class="habit-freq">${h.frequency==="daily"?"каждый день":`${h.times_per_week}× в нед.`}</span></div>`).join(""):"<em class='muted'>Нет привычек</em>"}</div>`;
-  content.querySelectorAll("[data-done]").forEach(btn=>btn.addEventListener("click",async()=>{
+
+  let addingParentId=null, addingGoalId=goalId;
+  const subtaskForm=content.querySelector("#add-subtask-form");
+  const subtaskTitle=content.querySelector("#subtask-title");
+  const subtaskEst=content.querySelector("#subtask-estimated");
+
+  content.querySelector("#add-root-task-btn").addEventListener("click",()=>{
+    addingParentId=null; subtaskTitle.value=""; subtaskEst.value=""; subtaskForm.style.display="flex"; subtaskTitle.focus();
+  });
+  content.querySelectorAll(".tree-add-sub").forEach(btn=>btn.addEventListener("click",()=>{
+    addingParentId=btn.dataset.parent; subtaskTitle.value=""; subtaskEst.value=""; subtaskForm.style.display="flex"; subtaskTitle.focus();
+  }));
+  content.querySelector("#subtask-cancel").addEventListener("click",()=>{subtaskForm.style.display="none";});
+  content.querySelector("#subtask-save").addEventListener("click",async()=>{
+    const title=subtaskTitle.value.trim(); if(!title)return;
+    await fetch(`${API}/tasks`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,category:"work",status:"open",goal_id:addingParentId?null:addingGoalId,parent_task_id:addingParentId||null,estimated_minutes:parseInt(subtaskEst.value)||null})});
+    subtaskForm.style.display="none"; openGoalDetail(goalId);
+  });
+  content.querySelectorAll(".tree-toggle").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const isOpen=btn.dataset.open==="true";
+      const children=btn.closest(".tree-node").nextElementSibling;
+      if(children?.classList.contains("tree-children")){children.style.display=isOpen?"none":"block";btn.textContent=isOpen?"▸":"▾";btn.dataset.open=isOpen?"false":"true";}
+    });
+  });
+  content.querySelectorAll(".tree-status").forEach(btn=>btn.addEventListener("click",async()=>{
     const isDone=btn.dataset.done==="true";
     await fetch(`${API}/tasks/${btn.dataset.id}/status?status=${isDone?"open":"done"}`,{method:"PATCH"});
     openGoalDetail(goalId);
@@ -526,62 +629,24 @@ async function renderBacklog(){
   const tasks=await fetch(`${API}/tasks/backlog`).then(r=>r.json()).catch(()=>[]);
   if(!tasks.length){el.innerHTML="<div class='card'><em class='muted'>Беклог пуст</em></div>";return;}
   el.innerHTML="";
-
-  // группируем: назначенные на день / без даты
-  const scheduled=tasks.filter(t=>t.scheduled_date);
-  const unscheduled=tasks.filter(t=>!t.scheduled_date);
-
+  const scheduled=tasks.filter(t=>t.scheduled_date), unscheduled=tasks.filter(t=>!t.scheduled_date);
   const renderGroup=(title,list)=>{
     if(!list.length)return;
-    const grp=document.createElement("div");grp.className="card";
-    grp.innerHTML=`<h3>${title}</h3>`;
+    const grp=document.createElement("div");grp.className="card";grp.innerHTML=`<h3>${title}</h3>`;
     list.forEach(t=>{
       const card=document.createElement("div");card.className="task-card";
-      card.innerHTML=`
-        <div class="task-card-header">
-          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
-            <span class="task-card-title">${t.title}</span>
-            <span class="detail-tag cat-${t.category}">${CAT_LABELS[t.category]||t.category}</span>
-            ${t.scheduled_date?`<span class="task-time-badge">📅 ${localDate(t.scheduled_date).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>`:""}
-            ${t.deadline?`<span class="task-time-badge">⏰ ${localDate(t.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>`:""}
-            ${t.estimated_minutes?`<span class="task-time-badge">~${fmtMinutes(t.estimated_minutes)}</span>`:""}
-          </div>
-          <div style="display:flex;gap:.4rem">
-            <button class="btn-link task-done-btn" data-id="${t.id}" title="Выполнено">✓</button>
-            <button class="btn-link danger task-del" data-id="${t.id}" title="Удалить">✕</button>
-          </div>
-        </div>
-        ${t.note?`<div class="task-note-text">${t.note}</div>`:""}`;
-      card.querySelector(".task-done-btn").addEventListener("click",async()=>{
-        await fetch(`${API}/tasks/${t.id}/status?status=done`,{method:"PATCH"});
-        renderBacklog();
-      });
-      card.querySelector(".task-del").addEventListener("click",async()=>{
-        if(!confirm(`Удалить «${t.title}»?`))return;
-        await fetch(`${API}/tasks/${t.id}`,{method:"DELETE"});
-        renderBacklog();
-      });
+      card.innerHTML=`<div class="task-card-header"><div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap"><span class="task-card-title">${t.title}</span><span class="detail-tag cat-${t.category}">${CAT_LABELS[t.category]||t.category}</span>${t.scheduled_date?`<span class="task-time-badge">📅 ${localDate(t.scheduled_date).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>`:""} ${t.deadline?`<span class="task-time-badge">⏰ ${localDate(t.deadline).toLocaleDateString("ru-RU",{day:"numeric",month:"short"})}</span>`:""} ${t.estimated_minutes?`<span class="task-time-badge">~${fmtMinutes(t.estimated_minutes)}</span>`:""}</div><div style="display:flex;gap:.4rem"><button class="btn-link task-done-btn" data-id="${t.id}">✓</button><button class="btn-link danger task-del" data-id="${t.id}">✕</button></div></div>${t.note?`<div class="task-note-text">${t.note}</div>`:""}`;
+      card.querySelector(".task-done-btn").addEventListener("click",async()=>{await fetch(`${API}/tasks/${t.id}/status?status=done`,{method:"PATCH"});renderBacklog();});
+      card.querySelector(".task-del").addEventListener("click",async()=>{if(!confirm(`Удалить «${t.title}»?`))return;await fetch(`${API}/tasks/${t.id}`,{method:"DELETE"});renderBacklog();});
       grp.appendChild(card);
     });
     el.appendChild(grp);
   };
-
-  renderGroup("Назначенные на день",scheduled);
-  renderGroup("Без даты",unscheduled);
+  renderGroup("Назначенные на день",scheduled); renderGroup("Без даты",unscheduled);
 }
 
 async function saveTask(){
-  const goalId=document.getElementById("task-goal-id").value;
-  const payload={
-    title:document.getElementById("task-title").value.trim(),
-    category:document.getElementById("task-category").value,
-    estimated_minutes:parseInt(document.getElementById("task-estimated").value)||null,
-    scheduled_date:document.getElementById("task-scheduled").value||null,
-    deadline:document.getElementById("task-deadline").value||null,
-    goal_id:goalId||null,
-    note:document.getElementById("task-note").value.trim()||null,
-    status:"open",
-  };
+  const payload={title:document.getElementById("task-title").value.trim(),category:document.getElementById("task-category").value,estimated_minutes:parseInt(document.getElementById("task-estimated").value)||null,scheduled_date:document.getElementById("task-scheduled").value||null,deadline:document.getElementById("task-deadline").value||null,goal_id:document.getElementById("task-goal-id").value||null,note:document.getElementById("task-note").value.trim()||null,status:"open"};
   if(!payload.title)return;
   await fetch(`${API}/tasks`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   ["task-title","task-estimated","task-scheduled","task-deadline","task-note"].forEach(id=>document.getElementById(id).value="");
@@ -598,7 +663,7 @@ async function initHabitsPage(){
   document.getElementById("cancel-habit-btn").onclick=()=>document.getElementById("add-habit-form").style.display="none";
   document.getElementById("save-habit-btn").onclick=saveHabit;
   document.getElementById("habit-frequency").addEventListener("change",e=>{document.getElementById("times-per-week-label").style.display=e.target.value==="weekly"?"block":"none";});
-  populateGoalSelects();renderHabitsPage();
+  populateGoalSelects(); renderHabitsPage();
 }
 
 async function renderHabitsPage(){
@@ -627,7 +692,7 @@ async function saveHabit(){
   if(!payload.title)return;
   await fetch(`${API}/habits`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
   ["habit-title","habit-note"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("add-habit-form").style.display="none";renderHabitsPage();
+  document.getElementById("add-habit-form").style.display="none"; renderHabitsPage();
 }
 
 // ─── STATS PAGE ───────────────────────────────────────────────────────────────
